@@ -36,6 +36,8 @@ const App = () => {
   const deleteFile = async (fileId) => {
     await axios.delete(`/api/csv/${fileId}`);
     fetchFiles();
+    setRules([])
+    setResult([])
   };
 
   const applyRule = async (ruleId, fileId) => {
