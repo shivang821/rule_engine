@@ -41,7 +41,7 @@ const App = () => {
   const applyRule = async (ruleId, fileId) => {
     const { data } = await axios.post(`/api/rule/apply/${ruleId}/${fileId}`);
     setResult(data);
-    alert(`Rule with id ${ruleId} applied successfully on this file`)
+    alert(`Rule with id ${ruleId} applied successfully on this file and result contains ${data.length} number of rows`)
   };
 
   const createRule = async (e) => {

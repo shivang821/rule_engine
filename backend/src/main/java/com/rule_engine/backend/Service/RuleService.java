@@ -68,9 +68,6 @@ public class RuleService {
                 .orElseThrow(() -> new IllegalArgumentException("Rule not found"));
 
         List<Map<String, Object>> fileContent = csvFileService.getFileContent(fileId);
-        System.out.println("**********************");
-        System.out.println(fileContent);
-        System.out.println("**********************");
         ASTNode ast = parseRuleToAST(rule.getRuleString());
 
         return evaluateAST(ast, fileContent);
@@ -106,7 +103,7 @@ public class RuleService {
         expression = expression.trim();
 
         // Determine the operator used in the expression
-        String[] operators = {">=", "<=", ">", "<", "==", "!="};
+        String[] operators = {">=", "<=", ">", "<", "==", "!=","="};
         String finalExpression = expression;
         String selectedOperator = Arrays.stream(operators)
                 .filter(expression::contains)
@@ -146,7 +143,9 @@ public class RuleService {
             case "<":
                 return leftValue.compareTo(rightValue) < 0;
             case "==":
-                return leftValue.equalsIgnoreCase(rightValue);  // Case-insensitive comparison
+                return leftValue.equalsIgnoreCase(rightValue);// Case-insensitive comparison
+            case "=":
+                return leftValue.equalsIgnoreCase(rightValue);
             case "!=":
                 return !leftValue.equalsIgnoreCase(rightValue);  // Case-insensitive comparison
             default:
