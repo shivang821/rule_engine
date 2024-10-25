@@ -37,7 +37,7 @@
 
   Prerequisites:
   
-  Java 22 or later (copy the your system java versioin in pom.xml. This project has java 22)
+  Java 22 (copy the your system java versioin in pom.xml. This project has java 22)
   
   Intellij idea prefered
   
