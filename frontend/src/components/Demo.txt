@@ -1,0 +1,120 @@
+<h2>File Name: {fileName}</h2>
+          <button onClick={handleDelete}>Delete File</button>
+          <div>
+            <h3>Create Rule Section</h3>
+
+            {/* Table Headers */}
+            <table style={{ margin: "0 auto" }}>
+              <thead>
+                <tr>
+                  <th>Field Name</th>
+                  <th>Operator</th>
+                  <th>Value</th>
+                  <th>Combine</th>
+                  <th>Logical Operator</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {/* Display Existing Rules from the Database */}
+                {existingRules.length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan="6">
+                        <h4>Existing Rules</h4>
+                      </td>
+                    </tr>
+                    {existingRules.map((rule, index) => (
+                      <tr key={index}>
+                        <td>{rule.fieldName}</td>
+                        <td>{rule.operator}</td>
+                        <td>{rule.value}</td>
+                        <td>{rule.combine ? "Yes" : "No"}</td>
+                        <td>{rule.logicalOperator || "N/A"}</td>
+                        <td>N/A</td>
+                      </tr>
+                    ))}
+                  </>
+                )}
+
+                {/* Dynamic Rule Rows */}
+                {ruleRows.map((rule, index) => (
+                  <tr key={index}>
+                    <td>
+                      <select
+                        value={rule.fieldName}
+                        onChange={(e) =>
+                          handleRuleChange(index, "fieldName", e.target.value)
+                        }
+                      >
+                        <option value="">Select Field</option>
+                        {columns.map((col, i) => (
+                          <option key={i} value={col}>
+                            {col}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={rule.operator}
+                        onChange={(e) =>
+                          handleRuleChange(index, "operator", e.target.value)
+                        }
+                      >
+                        <option value="">Select Operator</option>
+                        <option value="==">==</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value=">=">&gt;=</option>
+                        <option value="<=">&lt;=</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={rule.value}
+                        onChange={(e) =>
+                          handleRuleChange(index, "value", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={rule.combine}
+                        onChange={(e) =>
+                          handleRuleChange(index, "combine", e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={rule.logicalOperator}
+                        onChange={(e) =>
+                          handleRuleChange(
+                            index,
+                            "logicalOperator",
+                            e.target.value
+                          )
+                        }
+                        disabled={!rule.combine}
+                      >
+                        <option value="">Select</option>
+                        <option value="AND">AND</option>
+                        <option value="OR">OR</option>
+                      </select>
+                    </td>
+                    <td>
+                      <button onClick={() => createRule(index)}>
+                        Create Rule
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <button onClick={addNewRuleRow}>Add Rule</button>
+          </div>

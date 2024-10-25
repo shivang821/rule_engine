@@ -1,0 +1,17 @@
+private List<Map<String, Object>> parseCSVContent(String content) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        try (Scanner scanner = new Scanner(content)) {
+            String[] headers = scanner.nextLine().split(",");
+
+            while (scanner.hasNextLine()) {
+                String[] values = scanner.nextLine().split(",");
+                Map<String, Object> row = new HashMap<>();
+                for (int i = 0; i < headers.length; i++) {
+                    row.put(headers[i].trim(), parseValue(values[i].trim()));
+                }
+                rows.add(row);
+            }
+        }
+        return rows;
+    }
