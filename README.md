@@ -1,5 +1,5 @@
 # clone the repsitory by typing following command in git bash or in any other terminal
-  git clone https://github.com/shivang821/Weather-Monitoring.git
+  git clone https://github.com/shivang821/rule_engine
 
   cd Weather-Monitoring
   
