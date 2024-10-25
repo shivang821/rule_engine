@@ -26,13 +26,16 @@ public class RuleService {
                 .orElseThrow(() -> new RuntimeException("Rule not found with ID: " + ruleId));
     }
     // create rule logic start
+    public void deleteAllRules() {
+        ruleRepository.deleteAll();
+        System.out.println("all rules deleted");
+    }
     public List<RuleInfoResponse> getAllRules() {
         return ruleRepository.findAll().stream()
                 .map(rule -> new RuleInfoResponse(rule.getId(), rule.getRuleString()))
                 .collect(Collectors.toList());
     }
     public Rule createRule(String ruleString) {
-        // Format the rule string
         String formattedRuleString = formatRuleString(ruleString);
 
         // Validate the formatted rule
@@ -45,39 +48,29 @@ public class RuleService {
         }
 
 
-        // Set other fields as needed (like astJson)
         return ruleRepository.save(rule);
     }
 
     private String formatRuleString(String ruleString) {
-        // Ensure proper spacing around comparison operators (<, >, <=, >=, ==, !=)
         String formatted = ruleString.replaceAll("\\s*([<>=!]=?)\\s*", " $1 ");
 
-        // Replace 'and' and 'or' with ' AND ' and ' OR ' (with spaces)
         formatted = formatted.replaceAll("(?i)\\band\\b", " AND ")
                 .replaceAll("(?i)\\bor\\b", " OR ");
 
-        // Remove unnecessary spaces around parentheses
         formatted = formatted.replaceAll("\\s*\\(\\s*", " ( ")
                 .replaceAll("\\s*\\)\\s*", " ) ");
 
-        // Ensure no extra spaces are left behind
         return formatted.replaceAll("\\s{2,}", " ").trim();
     }
-//    private boolean isValidRule(String ruleString) {
-//        // Implement validation logic to ensure the rule string is valid
-//        // This can include checking for matching parentheses, valid operators, etc.
-//        return true; // Replace with actual validation logic
-//    }
 
-    // rule creation logic end
-
-    // Apply the rule to the CSV file content using AST traversal logic
     public List<Map<String, Object>> applyRule(Long ruleId, Long fileId) {
         Rule rule = ruleRepository.findById(ruleId)
                 .orElseThrow(() -> new IllegalArgumentException("Rule not found"));
 
         List<Map<String, Object>> fileContent = csvFileService.getFileContent(fileId);
+        System.out.println("**********************");
+        System.out.println(fileContent);
+        System.out.println("**********************");
         ASTNode ast = parseRuleToAST(rule.getRuleString());
 
         return evaluateAST(ast, fileContent);
@@ -109,85 +102,53 @@ public class RuleService {
             throw new IllegalArgumentException("Invalid operator: " + node.getValue());
         }
     }
-
-    // Create a predicate for filtering data based on a simple expression
-//    private Predicate<Map<String, Object>> createPredicateFromExpression(String expression) {
-//        String[] parts = expression.split("\\s+");  // Split by space (e.g., "age > 30")
-//        String field = parts[0];
-//        String operator = parts[1];
-//        String value = parts[2];
-//
-//        return row -> {
-//            Object fieldValue = row.get(field);
-//
-//            switch (operator) {
-//                case ">":
-//                    return Double.parseDouble(fieldValue.toString()) > Double.parseDouble(value);
-//                case "<":
-//                    return Double.parseDouble(fieldValue.toString()) < Double.parseDouble(value);
-//                case "==":
-//                    return fieldValue.toString().equals(value.replace("'", ""));
-//                default:
-//                    throw new IllegalArgumentException("Invalid operator in expression: " + expression);
-//            }
-//        };
-//    }
     private Predicate<Map<String, Object>> createPredicateFromExpression(String expression) {
         expression = expression.trim();
 
-        // Check for valid operators
-        if (expression.contains(">=")) {
-            String[] parts = expression.split(">=");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, ">=");
-        } else if (expression.contains("<=")) {
-            String[] parts = expression.split("<=");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, "<=");
-        } else if (expression.contains(">")) {
-            String[] parts = expression.split(">");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, ">");
-        } else if (expression.contains("<")) {
-            String[] parts = expression.split("<");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, "<");
-        } else if (expression.contains("==")) {
-            String[] parts = expression.split("==");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, "==");
-        } else if (expression.contains("!=")) {
-            String[] parts = expression.split("!=");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
-            return row -> compare(row, left, right, "!=");
-        } else {
-            throw new IllegalArgumentException("Invalid operator in expression: " + expression);
-        }
+        // Determine the operator used in the expression
+        String[] operators = {">=", "<=", ">", "<", "==", "!="};
+        String finalExpression = expression;
+        String selectedOperator = Arrays.stream(operators)
+                .filter(expression::contains)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid operator in expression: " + finalExpression));
+
+        // Split the expression based on the selected operator
+        String[] parts = expression.split(Pattern.quote(selectedOperator));
+        String left = parts[0].trim().toLowerCase();  // Column name, case-insensitive
+        String right = parts[1].trim().replaceAll("'", "");  // Value to compare
+
+        return row -> {
+            // Convert the row's keys to lowercase for dynamic column matching
+            Map<String, Object> normalizedRow = row.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toLowerCase(),  // Normalize column name to lowercase
+                            Map.Entry::getValue
+                    ));
+
+            Object leftValue = normalizedRow.get(left);
+            if (leftValue == null) {
+                throw new IllegalArgumentException("Column not found: " + left);
+            }
+
+            return compare(leftValue.toString().toLowerCase(), right.toLowerCase(), selectedOperator);
+        };
     }
 
-    private boolean compare(Map<String, Object> row, String left, String right, String operator) {
-        Object leftValue = row.get(left);
-        Object rightValue = parseValue(right);
-
+    private boolean compare(String leftValue, String rightValue, String operator) {
         switch (operator) {
             case ">=":
-                return ((Comparable) leftValue).compareTo(rightValue) >= 0;
+                return leftValue.compareTo(rightValue) >= 0;
             case "<=":
-                return ((Comparable) leftValue).compareTo(rightValue) <= 0;
+                return leftValue.compareTo(rightValue) <= 0;
             case ">":
-                return ((Comparable) leftValue).compareTo(rightValue) > 0;
+                return leftValue.compareTo(rightValue) > 0;
             case "<":
-                return ((Comparable) leftValue).compareTo(rightValue) < 0;
+                return leftValue.compareTo(rightValue) < 0;
             case "==":
-                return leftValue.equals(rightValue);
+                return leftValue.equalsIgnoreCase(rightValue);  // Case-insensitive comparison
             case "!=":
-                return !leftValue.equals(rightValue);
+                return !leftValue.equalsIgnoreCase(rightValue);  // Case-insensitive comparison
             default:
                 throw new IllegalArgumentException("Invalid operator: " + operator);
         }
